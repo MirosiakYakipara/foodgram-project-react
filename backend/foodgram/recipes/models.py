@@ -1,9 +1,21 @@
 from colorfield.fields import ColorField
+
 from django.db import models
+from django.core.validators import RegexValidator, MinValueValidator
+
 from users.models import User
+from core.enum import Regex, Message, MinLimit
+
+
+class IngredientQuerySet(models.QuerySet):
+    """QuerySet для ингридиентов."""
+    def filter_by_name(self, name):
+        """Метод для фильтрации по названию ингридиента."""
+        return self.filter(name__istartswith=name).order_by('name')
 
 
 class Ingredient(models.Model):
+    """Модель ингридиента."""
     name = models.CharField(
         verbose_name='Название ингридиента',
         max_length=200
@@ -13,23 +25,36 @@ class Ingredient(models.Model):
         max_length=200
     )
 
+    objects = IngredientQuerySet.as_manager()
+
     class Meta:
         verbose_name = 'Ингридиент'
         verbose_name_plural = 'Ингридиенты'
         ordering = ('name',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'measurement_unit'],
+                name='unique_measurement_unit_and_name'
+            )
+        ]
 
     def __str__(self):
         return self.name
 
 
 class Tag(models.Model):
+    """Модель тега."""
     name = models.CharField(
         verbose_name='Название тега',
-        max_length=200
+        max_length=200,
+        unique=True,
+        validators=(RegexValidator(
+            regex=Regex.RU_REGEX,
+            message=Message.TAG_NAME_MESSAGE), )
     )
     color = ColorField(
         verbose_name='Цвет тега',
-        format='hexa'
+        format='hex'
     )
     slug = models.SlugField(
         verbose_name='Описание тега',
@@ -46,7 +71,56 @@ class Tag(models.Model):
         return self.name
 
 
+class RecipeQuerySet(models.QuerySet):
+    """QuerySet для рецепта."""
+    def filter_by_tags(self, tags):
+        """Метод для фильтрации по тегам."""
+        return self.filter(
+            tags__slug__in=tags).distinct().order_by('-pub_date')
+
+    def add_annotations(self, user_id):
+        """
+        Метод для добавления новых полей в модель рецепта при помощи annotate.
+        """
+        return self.annotate(
+            recipes_count=models.Count('recipe'),
+            is_favorited=models.Exists(
+                FavoriteRecipes.objects.filter(
+                    user_id=user_id, recipe__pk=models.OuterRef('pk')
+                )
+            ),
+            is_in_shopping_cart=models.Exists(
+                ShoppingCart.objects.filter(
+                    user_id=user_id, recipe__pk=models.OuterRef('pk')
+                )
+            ),
+        )
+
+    def filter_in_favorite(self, is_favorited):
+        """Метод для фильтрации по избранным."""
+        if is_favorited == '1':
+            return self.filter(
+                is_favorited=True).order_by('-pub_date')
+        elif is_favorited == '0':
+            return self.exclude(
+                is_favorited=False).order_by('-pub_date')
+
+    def filter_in_shopping_cart(self, is_in_shopping_cart):
+        """Метод для фильтрации по списку покупок."""
+        if is_in_shopping_cart == '1':
+            return self.filter(
+                is_in_shopping_cart=True).order_by('-pub_date')
+        elif is_in_shopping_cart == '0':
+            return self.exclude(
+                is_in_shopping_cart=False).order_by('-pub_date')
+
+    def filter_by_author(self, author):
+        """Метод для фильтрации по автору."""
+        return self.filter(author=author).order_by('-pub_date')
+
+
 class Recipe(models.Model):
+    """Модель рецепта."""
     tags = models.ManyToManyField(
         Tag,
         verbose_name='Теги',
@@ -76,11 +150,16 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveIntegerField(
         verbose_name='Время приготовления',
+        validators=(MinValueValidator(
+            limit_value=MinLimit.MIN_COOKING_TIME,
+            message=Message.MIN_COOKING_TIME_MESSAGE), )
     )
     pub_date = models.DateTimeField(
         verbose_name='Дата публикации рецепта',
         auto_now_add=True
     )
+
+    objects = RecipeQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'Рецепт'
@@ -92,6 +171,7 @@ class Recipe(models.Model):
 
 
 class IngredientInRecipe(models.Model):
+    """Модель ингридиента в рецепте."""
     ingredient = models.ForeignKey(
         Ingredient,
         verbose_name='Ингридиент',
@@ -105,7 +185,10 @@ class IngredientInRecipe(models.Model):
         related_name='recipe'
     )
     amount = models.PositiveIntegerField(
-        verbose_name='Количество'
+        verbose_name='Количество',
+        validators=(MinValueValidator(
+            limit_value=MinLimit.MIN_AMOUNT,
+            message=Message.MIN_AMOUNT_MESSAGE), )
     )
 
     class Meta:
@@ -126,6 +209,7 @@ class IngredientInRecipe(models.Model):
 
 
 class FavoriteRecipes(models.Model):
+    """Модель избранного."""
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -154,6 +238,7 @@ class FavoriteRecipes(models.Model):
 
 
 class ShoppingCart(models.Model):
+    """Модель списка покупок."""
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

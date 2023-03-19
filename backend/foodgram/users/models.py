@@ -3,6 +3,7 @@ from django.db import models
 
 
 class User(AbstractUser):
+    """Модель пользователя."""
     first_name = models.CharField(
         'first name',
         max_length=150
@@ -27,6 +28,7 @@ class User(AbstractUser):
 
 
 class Follow(models.Model):
+    """Модель подписки."""
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

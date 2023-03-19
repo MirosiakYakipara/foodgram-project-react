@@ -1,17 +1,6 @@
 from django.shortcuts import get_object_or_404
-from django.db import IntegrityError
 from rest_framework import mixins, viewsets, status
-from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-
-
-class ListRetriveCreateViewSet(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    mixins.RetrieveModelMixin,
-    viewsets.GenericViewSet,
-):
-    pass
 
 
 class ListRetriveViewSet(
@@ -19,15 +8,18 @@ class ListRetriveViewSet(
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
-    pass
+    """Вьюсет на получение одного или нескольких объектов."""
+    ...
 
 
 class CreateAndDeleteMixin:
+    """
+    Миксин для добавления и удаления подписки,
+    рецепта в избранное, рецепта в список покупок.
+    """
     def create_and_delete(self,
                           pk,
                           klass,
-                          create_failed_msg,
-                          delete_failed_msg,
                           field):
         qs_obj = get_object_or_404(self.get_queryset(), pk=pk)
         kwargs = {
@@ -35,22 +27,16 @@ class CreateAndDeleteMixin:
             field: qs_obj
         }
         if self.request.method == 'POST':
-            try:
-                klass.objects.create(**kwargs)
-            except IntegrityError:
-                raise ValidationError({'errors': create_failed_msg})
             context = self.get_serializer_context()
-            serializer = self.get_serializer_class()
+            serializer = self.get_serializer_class()(
+                qs_obj, data=kwargs, context=context
+            )
+            serializer.is_valid(raise_exception=True)
+            klass.objects.create(**kwargs)
             response = Response(
-                serializer(instance=qs_obj, context=context).data,
+                serializer.data,
                 status=status.HTTP_201_CREATED)
         elif self.request.method == 'DELETE':
-            try:
-                get_object_or_404(klass, **kwargs).delete()
-            except IntegrityError:
-                raise ValidationError({'errors': delete_failed_msg})
+            get_object_or_404(klass, **kwargs).delete()
             response = Response(status=status.HTTP_204_NO_CONTENT)
-
-        else:
-            raise ValidationError({'errors': 'Неверный метод запроса!'})
         return response
