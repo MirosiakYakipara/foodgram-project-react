@@ -6,4 +6,3 @@ with open(file, encoding='utf-8') as r_file:
     for ing in data:
         for i in ing:
             print(i)
-        
