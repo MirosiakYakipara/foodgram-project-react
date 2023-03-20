@@ -149,8 +149,8 @@ class RecipeViewSet(viewsets.ModelViewSet, CreateAndDeleteMixin):
         )
 
     @action(
-            detail=False,
-            methods=['get']
+        detail=False,
+        methods=['get']
     )
     def download_shopping_cart(self, request):
         """Метод для скачивания списка покупок."""
