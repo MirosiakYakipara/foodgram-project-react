@@ -1,6 +1,4 @@
 from django.contrib import admin
-from django.utils.safestring import mark_safe
-from sorl.thumbnail import get_thumbnail
 
 from .models import (Tag, Ingredient, IngredientInRecipe, Recipe,
                      FavoriteRecipes, ShoppingCart)
@@ -48,7 +46,6 @@ class RecipeAdmin(admin.ModelAdmin):
     """Настройка рецепта для админке."""
     list_display = (
         'name',
-        'get_image',
         'author',
         'added_favorites'
     )
@@ -67,14 +64,8 @@ class RecipeAdmin(admin.ModelAdmin):
         'text',
         'tags',
         'cooking_time',
-        'image',
     )
     readonly_fields = ('added_favorites', )
-
-    def get_image(self, obj):
-        im = get_thumbnail(obj.image, '75x75', crop='center', quality=99)
-        return mark_safe(f"<img src={im.url}/>")
-    get_image.short_description = 'Изображение рецепта'
 
     def added_favorites(self, obj):
         return obj.favorite_recipe.count()
