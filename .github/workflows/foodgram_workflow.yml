@@ -78,7 +78,6 @@ jobs:
           script: |
             sudo docker pull mirosiakyakipara/foodgram-frontend
             sudo docker pull mirosiakyakipara/foodgram-backend
-            sudo docker stop $(sudo docker ps -a -q)
             sudo docker-compose stop
             sudo docker-compose rm backend
             sudo docker-compose rm frontend
