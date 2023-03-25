@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = '2h$en0@=8qfgkwo#q&s!sm0vwe3zncs-w8$1$=k8%^d(6#tn*s'
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -63,13 +63,21 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT')
+        'NAME': os.getenv('DB_NAME', default=None),
+        'USER': os.getenv('POSTGRES_USER', default=None),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', default=None),
+        'HOST': os.getenv('DB_HOST', default=None),
+        'PORT': os.getenv('DB_PORT', default=None)
     }
 }
+
+# DATABASES = { 
+#     'default': { 
+#         'ENGINE': 'django.db.backends.sqlite3', 
+#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'), 
+#     } 
+# } 
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
@@ -123,8 +131,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_L10N = True
-
-USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
