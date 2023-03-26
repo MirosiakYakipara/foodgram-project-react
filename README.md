@@ -41,10 +41,15 @@
     Шаблон наполнения "*.env*":
     ***
     DB_ENGINE=django.db.backends.postgresql # указываем, что работаем с postgresql
+    
     DB_NAME=postgres # имя базы данных
+    
     POSTGRES_USER=postgres # логин для подключения к базе данных
+    
     POSTGRES_PASSWORD=postgres # пароль для подключения к БД (установите свой)
+    
     DB_HOST=db # название сервиса (контейнера)
+    
     DB_PORT=5432 # порт для подключения к БД
     ***
 
@@ -550,6 +555,41 @@ http://localhost/api/users/{id}/subscribe/
 * Пример ответа:
 ```json
 {}
+```
+***
+### Работа с тегами.
+
+1. ***GET-запрос:*** Получить список тегов:
+
+```
+http://localhost/api/tags/
+```
+
+* Пример ответа:
+```json
+[
+  {
+    "id": 0,
+    "name": "Завтрак",
+    "color": "#E26C2D",
+    "slug": "breakfast"
+  }
+]
+```
+
+2. ***GET-запрос:*** Получение тега по id:
+
+```
+http://localhost/api/tags/{id}/
+```
+
+* Пример ответа:
+{
+  "id": 0,
+  "name": "Завтрак",
+  "color": "#E26C2D",
+  "slug": "breakfast"
+}
 ```
 ***
 ### Работа с ингредиентами.
